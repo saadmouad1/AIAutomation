@@ -1,0 +1,245 @@
+@import "tailwindcss";
+
+/* ============================================================
+   FLOWRA DESIGN SYSTEM — globals.css
+   Version: 1.0
+   ============================================================ */
+
+/* ──────────────────────────────────────────────────────────
+   THEME TOKENS — Dark Mode (default)
+   ────────────────────────────────────────────────────────── */
+:root,
+.dark {
+  color-scheme: dark;
+
+  /* Backgrounds */
+  --background:        #080A0F;
+  --surface:           #11141B;
+  --surface-elevated:  #171B24;
+  --surface-overlay:   #1E2330;
+
+  /* Borders */
+  --border:            rgba(255, 255, 255, 0.07);
+  --border-strong:     rgba(255, 255, 255, 0.13);
+
+  /* Text */
+  --foreground:        #F5F7FA;
+  --muted:             #9299A8;
+  --subtle:            #555F72;
+
+  /* Brand (Accent — overrideable) */
+  --brand:             #635BFF;
+  --brand-hover:       #5148E8;
+  --brand-light:       rgba(99, 91, 255, 0.12);
+  --brand-border:      rgba(99, 91, 255, 0.30);
+
+  /* Secondary accent */
+  --accent-secondary:  #06B6D4;
+
+  /* Semantic */
+  --success:           #22C55E;
+  --success-bg:        rgba(34, 197, 94, 0.10);
+  --warning:           #F59E0B;
+  --warning-bg:        rgba(245, 158, 11, 0.10);
+  --error:             #EF4444;
+  --error-bg:          rgba(239, 68, 68, 0.10);
+  --info:              #3B82F6;
+  --info-bg:           rgba(59, 130, 246, 0.10);
+
+  /* Glass */
+  --glass-bg:          rgba(17, 20, 27, 0.72);
+  --glass-border:      rgba(255, 255, 255, 0.08);
+  --glass-blur:        16px;
+  --glass-bg-strong:   rgba(23, 27, 36, 0.85);
+
+  /* Shadows */
+  --shadow-sm:         0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md:         0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg:         0 8px 30px rgba(0, 0, 0, 0.6);
+  --shadow-brand:      0 0 0 3px rgba(99, 91, 255, 0.25);
+  --shadow-glass:      0 4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+
+  /* Radius */
+  --radius-sm:         8px;
+  --radius-md:         12px;
+  --radius-lg:         16px;
+  --radius-xl:         20px;
+  --radius-full:       9999px;
+
+  /* Sidebar */
+  --sidebar-width:     256px;
+  --topbar-height:     60px;
+}
+
+/* ──────────────────────────────────────────────────────────
+   LIGHT MODE
+   ────────────────────────────────────────────────────────── */
+.light {
+  color-scheme: light;
+
+  --background:        #F6F7FB;
+  --surface:           #FFFFFF;
+  --surface-elevated:  #F9FAFC;
+  --surface-overlay:   #EFF1F5;
+
+  --border:            rgba(0, 0, 0, 0.07);
+  --border-strong:     rgba(0, 0, 0, 0.13);
+
+  --foreground:        #111827;
+  --muted:             #667085;
+  --subtle:            #9CA3AF;
+
+  --brand:             #635BFF;
+  --brand-hover:       #5148E8;
+  --brand-light:       rgba(99, 91, 255, 0.08);
+  --brand-border:      rgba(99, 91, 255, 0.25);
+
+  --glass-bg:          rgba(255, 255, 255, 0.70);
+  --glass-border:      rgba(0, 0, 0, 0.06);
+  --glass-bg-strong:   rgba(255, 255, 255, 0.90);
+
+  --shadow-sm:         0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md:         0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg:         0 8px 30px rgba(0, 0, 0, 0.10);
+  --shadow-glass:      0 4px 24px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+
+  --success-bg:        rgba(34, 197, 94, 0.08);
+  --warning-bg:        rgba(245, 158, 11, 0.08);
+  --error-bg:          rgba(239, 68, 68, 0.08);
+  --info-bg:           rgba(59, 130, 246, 0.08);
+}
+
+/* ──────────────────────────────────────────────────────────
+   ACCENT COLOR OVERRIDES
+   Usage: <html data-accent="cyan"> etc.
+   ────────────────────────────────────────────────────────── */
+[data-accent="blue"] {
+  --brand: #4F46E5; --brand-hover: #3730A3; --brand-light: rgba(79,70,229,0.12); --brand-border: rgba(79,70,229,0.30);
+}
+[data-accent="cyan"] {
+  --brand: #06B6D4; --brand-hover: #0891B2; --brand-light: rgba(6,182,212,0.12); --brand-border: rgba(6,182,212,0.30);
+}
+[data-accent="green"] {
+  --brand: #22C55E; --brand-hover: #16A34A; --brand-light: rgba(34,197,94,0.12); --brand-border: rgba(34,197,94,0.30);
+}
+[data-accent="orange"] {
+  --brand: #F59E0B; --brand-hover: #D97706; --brand-light: rgba(245,158,11,0.12); --brand-border: rgba(245,158,11,0.30);
+}
+[data-accent="rose"] {
+  --brand: #F43F5E; --brand-hover: #E11D48; --brand-light: rgba(244,63,94,0.12); --brand-border: rgba(244,63,94,0.30);
+}
+
+/* ──────────────────────────────────────────────────────────
+   BASE STYLES
+   ────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-outfit), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+/* ──────────────────────────────────────────────────────────
+   GLASS UTILITY CLASSES
+   ────────────────────────────────────────────────────────── */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--shadow-glass);
+}
+
+.glass-strong {
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: var(--shadow-glass);
+}
+
+/* ──────────────────────────────────────────────────────────
+   SCROLLBAR
+   ────────────────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: var(--border-strong); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ──────────────────────────────────────────────────────────
+   SELECTION
+   ────────────────────────────────────────────────────────── */
+::selection {
+  background: var(--brand-light);
+  color: var(--foreground);
+}
+
+/* ──────────────────────────────────────────────────────────
+   FOCUS VISIBLE
+   ────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* ──────────────────────────────────────────────────────────
+   REDUCED MOTION
+   ────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────
+   ANIMATION KEYFRAMES
+   ────────────────────────────────────────────────────────── */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}
+
+.animate-fade-in   { animation: fade-in  200ms ease both; }
+.animate-fade-up   { animation: fade-up  250ms ease both; }
+.animate-scale-in  { animation: scale-in 180ms ease both; }
+
+.skeleton {
+  background: linear-gradient(90deg,
+    var(--surface-elevated) 25%,
+    var(--surface-overlay)  50%,
+    var(--surface-elevated) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
