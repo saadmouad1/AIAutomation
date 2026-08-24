@@ -32,6 +32,7 @@ export class AppError extends Error {
     return new AppError({
       code: ErrorCode.UNAUTHORIZED,
       statusCode: 401,
+      message,
       publicMessage: message,
     });
   }
@@ -40,6 +41,7 @@ export class AppError extends Error {
     return new AppError({
       code: ErrorCode.FORBIDDEN,
       statusCode: 403,
+      message,
       publicMessage: message,
     });
   }
@@ -48,6 +50,7 @@ export class AppError extends Error {
     return new AppError({
       code: ErrorCode.NOT_FOUND,
       statusCode: 404,
+      message,
       publicMessage: message,
     });
   }
@@ -56,6 +59,7 @@ export class AppError extends Error {
     return new AppError({
       code: ErrorCode.BAD_REQUEST,
       statusCode: 400,
+      message,
       publicMessage: message,
       details,
     });
@@ -65,6 +69,7 @@ export class AppError extends Error {
     return new AppError({
       code: ErrorCode.CONFLICT,
       statusCode: 409,
+      message,
       publicMessage: message,
     });
   }

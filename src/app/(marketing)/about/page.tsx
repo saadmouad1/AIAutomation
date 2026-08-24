@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Image from "next/image";
+import { Logo } from "@/components/brand/logo";
 
 const FADE_UP: any = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 50, damping: 15 } } };
 const STAGGER: any = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } };
@@ -22,7 +22,7 @@ export default function AboutPage() {
           We built Flowra to be the central nervous system for modern businesses. A place where your forms, contacts, and workflows live together in harmony. 
         </motion.p>
         <motion.div variants={FADE_UP} className="py-12 flex justify-center">
-          <Image src="/brand/flowra-logo.jpg" alt="Flowra" width={200} height={48} className="opacity-80 dark:invert" />
+          <Logo />
         </motion.div>
         <motion.p variants={FADE_UP}>
           Today, thousands of companies rely on Flowra to handle millions of tasks every week. We're proud to give them their time back.

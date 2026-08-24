@@ -1,35 +1,39 @@
-import { NextRequest, NextResponse } from "next/server";
-import { handleApiError } from "../../../../../lib/errors/handler";
-import { requirePermission } from "../../../../../lib/tenant/guard";
-import { memberService } from "../../../../../services/member.service";
+import { NextRequest } from "next/server";
+import { handleApiError } from "@/lib/errors/handler";
+import { requireRole, requireTenant } from "@/lib/tenant/context";
+import { memberService } from "@/services/member.service";
+import { ApiResponse } from "@/lib/api-response";
 import { z } from "zod";
-import { Role } from "../../../../../modules/permissions/roles";
-import { AppError } from "../../../../../lib/errors/app-error";
+import { Role } from "@/modules/permissions/roles";
+
+const inviteSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  role: z.nativeEnum(Role).default(Role.MEMBER),
+});
+
+const updateRoleSchema = z.object({
+  userId: z.string().cuid(),
+  role: z.nativeEnum(Role),
+});
+
+const removeMemberSchema = z.object({
+  userId: z.string().cuid(),
+});
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ orgId: string }> }
 ) {
   try {
     const { orgId } = await params;
-    // Any member can list members
-    await requirePermission(req, orgId, "org:update"); 
-    // Wait, let's use a standard requireMembership for reading if we want any member to see it.
-    // For now, let's just use requireMembership
-    const { requireMembership } = await import("../../../../../lib/tenant/guard");
-    await requireMembership(req, orgId);
-
+    // Any member can read members list
+    await requireTenant(orgId);
     const members = await memberService.listMembers(orgId);
-    return NextResponse.json({ data: members });
+    return ApiResponse.success(members);
   } catch (error) {
     return handleApiError(error);
   }
 }
-
-const inviteSchema = z.object({
-  email: z.string().email(),
-  role: z.nativeEnum(Role).default(Role.MEMBER),
-});
 
 export async function POST(
   req: NextRequest,
@@ -37,13 +41,47 @@ export async function POST(
 ) {
   try {
     const { orgId } = await params;
-    await requirePermission(req, orgId, "member:invite");
+    await requireRole(orgId, "member:invite");
 
     const body = await req.json();
     const { email, role } = inviteSchema.parse(body);
-
     const member = await memberService.inviteMember(orgId, email, role);
-    return NextResponse.json({ data: member }, { status: 201 });
+    return ApiResponse.success(member, 201);
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ orgId: string }> }
+) {
+  try {
+    const { orgId } = await params;
+    // Only OWNER can change roles (enforced at service layer too)
+    await requireRole(orgId, "member:updateRole");
+
+    const body = await req.json();
+    const { userId, role } = updateRoleSchema.parse(body);
+    const member = await memberService.changeRole(orgId, userId, role);
+    return ApiResponse.success(member);
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ orgId: string }> }
+) {
+  try {
+    const { orgId } = await params;
+    await requireRole(orgId, "member:remove");
+
+    const body = await req.json();
+    const { userId } = removeMemberSchema.parse(body);
+    await memberService.removeMember(orgId, userId);
+    return ApiResponse.success({ removed: true });
   } catch (error) {
     return handleApiError(error);
   }

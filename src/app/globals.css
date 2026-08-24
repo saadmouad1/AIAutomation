@@ -13,19 +13,19 @@
   color-scheme: dark;
 
   /* Backgrounds */
-  --background:        #080A0F;
-  --surface:           #11141B;
-  --surface-elevated:  #171B24;
-  --surface-overlay:   #1E2330;
+  --background:        #030509;
+  --surface:           #0B0E14;
+  --surface-elevated:  #121620;
+  --surface-overlay:   #1A202C;
 
   /* Borders */
-  --border:            rgba(255, 255, 255, 0.07);
-  --border-strong:     rgba(255, 255, 255, 0.13);
+  --border:            rgba(255, 255, 255, 0.05);
+  --border-strong:     rgba(255, 255, 255, 0.10);
 
   /* Text */
-  --foreground:        #F5F7FA;
-  --muted:             #9299A8;
-  --subtle:            #555F72;
+  --foreground:        #FFFFFF;
+  --muted:             #94A3B8;
+  --subtle:            #475569;
 
   /* Brand (Accent — overrideable) */
   --brand:             #635BFF;
@@ -77,17 +77,20 @@
 .light {
   color-scheme: light;
 
-  --background:        #F6F7FB;
+  /* Backgrounds */
+  --background:        #FAFAFB;
   --surface:           #FFFFFF;
-  --surface-elevated:  #F9FAFC;
-  --surface-overlay:   #EFF1F5;
+  --surface-elevated:  #F4F4F5;
+  --surface-overlay:   #E4E4E7;
 
-  --border:            rgba(0, 0, 0, 0.07);
-  --border-strong:     rgba(0, 0, 0, 0.13);
+  /* Borders */
+  --border:            rgba(0, 0, 0, 0.06);
+  --border-strong:     rgba(0, 0, 0, 0.12);
 
-  --foreground:        #111827;
-  --muted:             #667085;
-  --subtle:            #9CA3AF;
+  /* Text */
+  --foreground:        #09090B;
+  --muted:             #52525B;
+  --subtle:            #A1A1AA;
 
   --brand:             #635BFF;
   --brand-hover:       #5148E8;
@@ -146,10 +149,15 @@ html {
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-outfit), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.6;
+}
+
+.font-heading,
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading), system-ui, -apple-system, sans-serif;
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -161,6 +169,71 @@ body {
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   box-shadow: var(--shadow-glass);
+}
+
+.glass-panel {
+  background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* ──────────────────────────────────────────────────────────
+   ADVANCED ANIMATIONS & EFFECTS
+   ────────────────────────────────────────────────────────── */
+@keyframes gradient-pan {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient-pan {
+  background-size: 200% auto;
+  animation: gradient-pan 5s linear infinite;
+}
+
+.text-gradient {
+  background: linear-gradient(to right, #fff, #a5a5a5);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-brand {
+  background: linear-gradient(to right, #635BFF, #00F0FF, #635BFF);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-pan 4s linear infinite;
+}
+
+.spotlight-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-strong);
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.spotlight-card:hover {
+  border-color: rgba(99, 91, 255, 0.5);
+  transform: translateY(-5px);
+}
+
+.spotlight-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(800px circle at var(--mouse-x) var(--mouse-y), rgba(99,91,255,0.06), transparent 40%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.spotlight-content {
+  position: relative;
+  z-index: 1;
 }
 
 .glass-strong {

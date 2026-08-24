@@ -1,90 +1,128 @@
-import { getMockAutomation } from "@/lib/mock/automations";
-import { notFound } from "next/navigation";
+import { getSession } from "@/lib/auth/session";
+import { redirect, notFound } from "next/navigation";
+import { listUserOrganizations } from "@/repositories/organization.repository";
+import { workflowService } from "@/services/workflow.service";
 import { WorkflowCanvas } from "@/components/automations/workflow-canvas";
 import { StatusIndicator } from "@/components/ui/status-indicator";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Play, Pause, Settings2 } from "lucide-react";
+import { ArrowLeft, Settings2 } from "lucide-react";
 import Link from "next/link";
-import { AutomationStatus } from "@/types/automations";
+import type { WorkflowStatus, WorkflowRecord } from "@/types/automations";
+import type { Node, Edge } from "@xyflow/react";
+import { WorkflowStatusControls } from "@/components/automations/workflow-status-controls";
+import { WebhookUrlCard } from "@/components/automations/webhook-url-card";
+import { ExecutionHistory } from "@/components/automations/execution-history";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const auto = await getMockAutomation(id);
-  return { title: auto ? `${auto.name} — Flowra` : "Automation Not Found" };
+  return { title: `Workflow ${id} — Flowra` };
 }
 
 export default async function AutomationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const automation = await getMockAutomation(id);
-  if (!automation) notFound();
 
-  const statusMap: Record<AutomationStatus, Parameters<typeof StatusIndicator>[0]["status"]> = {
-    active: "active", paused: "paused", draft: "draft", error: "error",
+  const session = await getSession();
+  if (!session?.user?.id) redirect("/login");
+
+  const orgs = await listUserOrganizations(session.user.id);
+  if (orgs.length === 0) redirect("/dashboard");
+
+  const orgId = orgs[0].id;
+
+  let workflow: WorkflowRecord;
+  try {
+    workflow = await workflowService.getById(id, orgId) as WorkflowRecord;
+  } catch {
+    notFound();
+  }
+
+  const statusMap: Record<WorkflowStatus, Parameters<typeof StatusIndicator>[0]["status"]> = {
+    ACTIVE: "active",
+    PAUSED: "paused",
+    DRAFT: "draft",
   };
 
-  const RUN_LOG = [
-    { time: "2m ago",  status: "success", duration: "1.2s" },
-    { time: "1h ago",  status: "success", duration: "0.9s" },
-    { time: "3h ago",  status: "error",   duration: "5.1s" },
-    { time: "1d ago",  status: "success", duration: "1.1s" },
-  ];
+  // Reconstruct React Flow nodes from DB records
+  const initialNodes: Node[] = workflow.nodes.map((n) => ({
+    id: n.nodeId,
+    type: n.type,
+    position: { x: n.positionX, y: n.positionY },
+    data: n.data as Record<string, unknown>,
+  }));
+
+  // Reconstruct React Flow edges from DB records
+  const initialEdges: Edge[] = workflow.edges.map((e) => ({
+    id: e.edgeId,
+    source: e.source,
+    target: e.target,
+    sourceHandle: e.sourceHandle ?? undefined,
+    targetHandle: e.targetHandle ?? undefined,
+    animated: true,
+    style: { stroke: "rgba(99,91,255,0.5)", strokeWidth: 2 },
+  }));
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 animate-fade-up">
+    <div className="mx-auto space-y-6 animate-fade-up max-w-[1400px]">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-3">
-          <Link href="/dashboard/automations"><Button variant="ghost" size="icon_sm"><ArrowLeft className="h-4 w-4" /></Button></Link>
+          <Link href="/dashboard/automations">
+            <Button variant="ghost" size="icon_sm"><ArrowLeft className="h-4 w-4" /></Button>
+          </Link>
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-xl font-bold text-[var(--foreground)]">{automation.name}</h1>
-              <StatusIndicator status={statusMap[automation.status]} />
+              <h1 className="text-xl font-bold text-text-primary">{workflow.name}</h1>
+              <StatusIndicator status={statusMap[workflow.status]} />
+              <Badge variant="outline" className="text-[10px]">v{workflow.version}</Badge>
             </div>
-            <p className="text-sm text-[var(--muted)]">{automation.description}</p>
-            <div className="flex items-center gap-4 mt-2 text-xs text-[var(--muted)]">
-              <span>{automation.runCount} runs</span>
-              <span>{automation.steps.length} steps</span>
-              {automation.lastRunAt && <span>Last run {new Date(automation.lastRunAt).toLocaleDateString()}</span>}
+            <p className="text-sm text-text-muted">{workflow.description ?? "No description"}</p>
+            <div className="flex items-center gap-4 mt-2 text-xs text-text-muted">
+              <span>{workflow.nodes.length} nodes</span>
+              <span>{workflow.edges.length} edges</span>
+              <span>Updated {new Date(workflow.updatedAt).toLocaleDateString()}</span>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="secondary" size="sm">
-            {automation.status === "active" ? <><Pause className="h-4 w-4" /> Pause</> : <><Play className="h-4 w-4" /> Activate</>}
-          </Button>
+          <WorkflowStatusControls 
+            orgId={orgId} 
+            workflowId={workflow.id} 
+            currentStatus={workflow.status} 
+          />
           <Button variant="ghost" size="icon"><Settings2 className="h-4 w-4" /></Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Workflow visual */}
-        <div className="lg:col-span-3 rounded-[var(--radius-xl)] border border-[var(--border)] bg-[var(--surface)]">
-          <div className="px-5 py-4 border-b border-[var(--border)]">
-            <h2 className="text-sm font-semibold text-[var(--foreground)]">Workflow steps</h2>
-          </div>
-          <WorkflowCanvas steps={automation.steps} />
-        </div>
+      <WebhookUrlCard workflowId={workflow.id} isActive={workflow.status === "ACTIVE"} />
 
-        {/* Run history */}
-        <div className="lg:col-span-2 rounded-[var(--radius-xl)] border border-[var(--border)] bg-[var(--surface)]">
-          <div className="px-5 py-4 border-b border-[var(--border)]">
-            <h2 className="text-sm font-semibold text-[var(--foreground)]">Run history</h2>
+      <Tabs defaultValue="builder" className="w-full">
+        <TabsList>
+          <TabsTrigger value="builder">Builder</TabsTrigger>
+          <TabsTrigger value="history">Execution History</TabsTrigger>
+        </TabsList>
+        <TabsContent value="builder" className="mt-4">
+          <div className="hidden lg:block">
+            <WorkflowCanvas
+              workflowId={workflow.id}
+              orgId={orgId}
+              initialNodes={initialNodes}
+              initialEdges={initialEdges}
+            />
           </div>
-          <div className="divide-y divide-[var(--border)]">
-            {RUN_LOG.map((run, i) => (
-              <div key={i} className="flex items-center gap-3 px-5 py-3">
-                <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${run.status === "success" ? "bg-[var(--success)]" : "bg-[var(--error)]"}`} />
-                <div className="flex-1">
-                  <p className="text-xs font-medium text-[var(--foreground)] capitalize">{run.status}</p>
-                  <p className="text-[10px] text-[var(--muted)]">Duration: {run.duration}</p>
-                </div>
-                <span className="text-[10px] text-[var(--subtle)]">{run.time}</span>
-              </div>
-            ))}
+          <div className="lg:hidden p-8 border border-dashed border-surface-border rounded-xl text-center">
+            <p className="text-sm text-text-muted">
+              Workflow Builder is optimized for desktop. Please open this page on a larger screen to build and edit workflows.
+            </p>
           </div>
-        </div>
-      </div>
+        </TabsContent>
+        <TabsContent value="history" className="mt-4">
+          <ExecutionHistory orgId={orgId} workflowId={workflow.id} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

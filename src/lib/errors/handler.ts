@@ -13,6 +13,7 @@ export function handleApiError(error: unknown) {
 
     return NextResponse.json(
       {
+        success: false,
         error: {
           code: error.code,
           message: error.publicMessage,
@@ -27,6 +28,7 @@ export function handleApiError(error: unknown) {
     logger.warn({ err: error }, "Validation Error");
     return NextResponse.json(
       {
+        success: false,
         error: {
           code: "VALIDATION_ERROR",
           message: "The provided data is invalid.",
@@ -37,10 +39,11 @@ export function handleApiError(error: unknown) {
     );
   }
 
-  // Unhandled errors
+  // Unhandled errors — never expose internal details
   logger.error({ err: error }, "Unhandled API Error");
   return NextResponse.json(
     {
+      success: false,
       error: {
         code: "INTERNAL_SERVER_ERROR",
         message: "An unexpected error occurred.",

@@ -5,19 +5,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Webhook, Users, TrendingUp, FileText,
-  Settings, HelpCircle, Plug, CheckSquare
+  Settings, HelpCircle, Plug, CheckSquare, Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CommandMenu } from "@/components/ui/command-menu";
+import { Logo } from "@/components/brand/logo";
 
 /* ── Nav structure ─────────────────────────────────── */
 const NAV_MAIN = [
   { name: "Overview",     href: "/dashboard",                icon: LayoutDashboard },
   { name: "Automations",  href: "/dashboard/automations",    icon: Webhook },
-  { name: "Leads",        href: "/dashboard/leads",          icon: TrendingUp },
-  { name: "Forms",        href: "/dashboard/forms",          icon: FileText },
-  { name: "Contacts",     href: "/dashboard/contacts",       icon: Users },
-  { name: "Tasks",        href: "/dashboard/tasks",          icon: CheckSquare },
+  { name: "Templates",    href: "/dashboard/templates",      icon: Zap },
+  { name: "Executions",   href: "/dashboard/executions",     icon: CheckSquare },
   { name: "Integrations", href: "/dashboard/integrations",   icon: Plug },
 ];
 
@@ -25,22 +24,6 @@ const NAV_BOTTOM = [
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
   { name: "Help",     href: "/dashboard/help",     icon: HelpCircle },
 ];
-
-import Image from "next/image";
-
-/* ── Logo mark ─────────────────────────────────────── */
-function FlowraLogo() {
-  return (
-    <Link href="/dashboard" className="flex items-center gap-3 px-4 py-5 select-none hover:opacity-90 transition-opacity">
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg overflow-hidden shrink-0 shadow-[0_2px_10px_var(--shadow-sm)]">
-        <Image src="/brand/favicon.jpg" alt="Flowra Icon" width={32} height={32} className="object-cover" />
-      </div>
-      <div className="flex flex-col">
-        <Image src="/brand/flowra-logo.jpg" alt="Flowra Logo" width={100} height={24} className="object-contain -ml-1 dark:invert" />
-      </div>
-    </Link>
-  );
-}
 
 function NavItem({ item, active }: { item: { name: string; href: string; icon: React.ElementType }; active: boolean }) {
   return (
@@ -60,7 +43,7 @@ function NavItem({ item, active }: { item: { name: string; href: string; icon: R
 }
 
 /* ── Sidebar ────────────────────────────────────────── */
-export function Sidebar() {
+export function Sidebar({ user }: { user?: { name?: string | null, email?: string | null } }) {
   const pathname = usePathname();
   const [cmdOpen, setCmdOpen] = React.useState(false);
 
@@ -84,8 +67,9 @@ export function Sidebar() {
   return (
     <>
       <aside className="flex h-full w-[var(--sidebar-width,256px)] shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)]">
-        {/* Logo */}
-        <FlowraLogo />
+        <Link href="/dashboard" className="px-4 py-5 mb-1 block hover:opacity-90 transition-opacity">
+          <Logo />
+        </Link>
 
         {/* Search / Command trigger */}
         <div className="px-3 mb-2">
@@ -118,14 +102,14 @@ export function Sidebar() {
           ))}
         </nav>
 
-        {/* User profile stub */}
+        {/* User profile */}
         <div className="mx-3 mb-3 flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 bg-[var(--surface-elevated)] border border-[var(--border)]">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-white text-xs font-bold">
-            S
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-white text-xs font-bold uppercase">
+            {user?.name?.[0] || user?.email?.[0] || "U"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-[var(--foreground)] truncate">Saad Mouad</p>
-            <p className="text-[10px] text-[var(--muted)] truncate">saad@flowra.app</p>
+            <p className="text-xs font-medium text-[var(--foreground)] truncate">{user?.name || "User"}</p>
+            <p className="text-[10px] text-[var(--muted)] truncate">{user?.email || ""}</p>
           </div>
         </div>
       </aside>

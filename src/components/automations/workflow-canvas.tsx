@@ -1,12 +1,31 @@
-import { WorkflowStep } from "@/types/automations";
-import { WorkflowStepCard } from "./workflow-step";
+"use client";
 
-export function WorkflowCanvas({ steps }: { steps: WorkflowStep[] }) {
+import { FlowCanvas } from "./builder/flow-canvas";
+import { AiCopilot } from "@/components/ai/ai-copilot";
+import type { Node, Edge } from "@xyflow/react";
+
+interface WorkflowCanvasProps {
+  workflowId?: string;
+  orgId?: string;
+  initialNodes?: Node[];
+  initialEdges?: Edge[];
+}
+
+export function WorkflowCanvas({
+  workflowId,
+  orgId,
+  initialNodes,
+  initialEdges,
+}: WorkflowCanvasProps) {
   return (
-    <div className="flex flex-col items-center py-6 px-4">
-      {steps.map((step, i) => (
-        <WorkflowStepCard key={step.id} step={step} isLast={i === steps.length - 1} />
-      ))}
+    <div className="relative w-full h-[calc(100vh-80px)] overflow-hidden">
+      <FlowCanvas
+        workflowId={workflowId}
+        orgId={orgId}
+        initialNodes={initialNodes}
+        initialEdges={initialEdges}
+      />
+      <AiCopilot />
     </div>
   );
 }

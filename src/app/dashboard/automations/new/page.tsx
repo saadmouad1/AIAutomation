@@ -5,121 +5,241 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { WorkflowCanvas } from "@/components/automations/workflow-canvas";
 import { GlassCard } from "@/components/ui/glass-card";
-import { WorkflowStep } from "@/types/automations";
-import { TEMPLATE_AUTOMATIONS } from "@/lib/mock/automations";
-import { Sparkles, Webhook, ArrowRight, Check } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Sparkles, Webhook, ArrowRight, Loader2, Play, CheckSquare, Terminal, Variable, Type, Split, Globe, AlertTriangle } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
-const PROMPTS = [
-  "Capture leads from my website form",
-  "Send a confirmation when someone submits a form",
-  "Notify my team about high-priority requests",
-  "Create a task when a customer needs follow-up",
-];
-
-function matchTemplate(prompt: string): typeof TEMPLATE_AUTOMATIONS[number] | null {
-  const lower = prompt.toLowerCase();
-  if (lower.includes("lead") || lower.includes("form") || lower.includes("capture")) return TEMPLATE_AUTOMATIONS[0];
-  if (lower.includes("follow") || lower.includes("task") || lower.includes("response")) return TEMPLATE_AUTOMATIONS[1];
-  return TEMPLATE_AUTOMATIONS[Math.floor(Math.random() * TEMPLATE_AUTOMATIONS.length)];
-}
+const nodeIcons: Record<string, React.ElementType> = {
+  START: Play,
+  END: CheckSquare,
+  LOG: Terminal,
+  SET_VALUE: Variable,
+  TRANSFORM: Type,
+  CONDITION: Split,
+  HTTP_REQUEST: Globe,
+  AI_GENERATE: Sparkles,
+};
 
 export default function NewAutomationPage() {
   const router = useRouter();
-  const [prompt, setPrompt] = React.useState("");
-  const [suggested, setSuggested] = React.useState<{ name: string; steps: WorkflowStep[] } | null>(null);
+  const searchParams = useSearchParams();
+  const orgId = searchParams.get("orgId");
+  
+  const [name, setName] = React.useState("");
+  const [description, setDescription] = React.useState("");
   const [loading, setLoading] = React.useState(false);
-  const [saved, setSaved] = React.useState(false);
+  
+  // AI Generate state
+  const [aiPrompt, setAiPrompt] = React.useState("");
+  const [aiGenerating, setAiGenerating] = React.useState(false);
+  const [aiResult, setAiResult] = React.useState<{ nodes: any[], edges: any[] } | null>(null);
 
-  async function handleDescribe() {
-    if (!prompt.trim()) return;
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    if (!orgId) {
+      toast.error("Organization ID is missing.");
+      return;
+    }
+
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1200)); // simulate analysis
-    const template = matchTemplate(prompt);
-    if (template) setSuggested({ name: template.name, steps: template.steps });
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/organizations/${orgId}/workflows`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, description }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error?.message || "Failed to create workflow");
+      }
+
+      const data = await res.json();
+      toast.success("Workflow created");
+      router.push(`/dashboard/automations/${data.data.id}`);
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred");
+      setLoading(false);
+    }
   }
 
-  function handleSave() {
-    setSaved(true);
-    setTimeout(() => router.push("/dashboard/automations"), 1000);
+  async function handleAiGenerate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!aiPrompt.trim()) return;
+    if (!orgId) {
+      toast.error("Organization ID is missing.");
+      return;
+    }
+
+    setAiGenerating(true);
+    setAiResult(null);
+    try {
+      const res = await fetch(`/api/organizations/${orgId}/workflows/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: aiPrompt }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error?.message || "Failed to generate workflow");
+      }
+
+      const data = await res.json();
+      setAiResult({ nodes: data.data.nodes, edges: data.data.edges });
+      toast.success("Workflow structure generated");
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred");
+    } finally {
+      setAiGenerating(false);
+    }
+  }
+
+  async function handleInsertGenerated() {
+    if (!aiResult) return;
+    if (!orgId) return;
+
+    setLoading(true);
+    try {
+      // Use the prompt as a default name if not provided elsewhere, or generate a generic one
+      const workflowName = aiPrompt.slice(0, 30) + (aiPrompt.length > 30 ? "..." : "") || "AI Generated Workflow";
+      
+      const res = await fetch(`/api/organizations/${orgId}/workflows`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          name: workflowName, 
+          description: `Generated from prompt: ${aiPrompt}`,
+          nodes: aiResult.nodes,
+          edges: aiResult.edges
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error?.message || "Failed to create workflow");
+      }
+
+      const data = await res.json();
+      toast.success("Workflow created from AI design");
+      router.push(`/dashboard/automations/${data.data.id}`);
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred");
+      setLoading(false);
+    }
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 animate-fade-up">
+    <div className="max-w-3xl mx-auto space-y-6 animate-fade-up pb-20">
       <div>
-        <h1 className="text-2xl font-bold text-[var(--foreground)]">Create workflow</h1>
-        <p className="text-sm text-[var(--muted)] mt-1">Build a workflow step by step or describe what you need.</p>
+        <h1 className="text-2xl font-bold text-text-primary">Create workflow</h1>
+        <p className="text-sm text-text-muted mt-1">Build a workflow step by step or describe what you need.</p>
       </div>
 
-      <Tabs defaultValue="describe">
+      <Tabs defaultValue="build">
         <TabsList>
-          <TabsTrigger value="describe"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Describe it</TabsTrigger>
-          <TabsTrigger value="build"><Webhook className="h-3.5 w-3.5 mr-1.5" />Build manually</TabsTrigger>
+          <TabsTrigger value="build"><Webhook className="h-3.5 w-3.5 mr-1.5" />Start from Scratch</TabsTrigger>
+          <TabsTrigger value="describe"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Generate with AI</TabsTrigger>
         </TabsList>
-
-        {/* ── Describe it tab (Phase 5) ─────────────────── */}
-        <TabsContent value="describe">
-          <GlassCard className="p-6 space-y-4">
-            <div>
-              <h2 className="text-sm font-semibold text-[var(--foreground)] mb-1">Describe what you want to automate</h2>
-              <p className="text-xs text-[var(--muted)] mb-3">Write in plain language. Flowra will suggest the best workflow.</p>
-              <Textarea
-                placeholder="e.g. Whenever someone submits my contact form, create a lead and send a confirmation email..."
-                className="min-h-[100px]"
-                value={prompt}
-                onChange={e => setPrompt(e.target.value)}
-              />
-            </div>
-            {/* Quick suggestions */}
-            <div className="flex flex-wrap gap-2">
-              {PROMPTS.map(p => (
-                <button key={p} onClick={() => setPrompt(p)}
-                  className="text-xs px-3 py-1.5 rounded-full border border-[var(--border-strong)] text-[var(--muted)] hover:border-[var(--brand-border)] hover:text-[var(--brand)] transition-all duration-150 cursor-pointer">
-                  {p}
-                </button>
-              ))}
-            </div>
-            <Button onClick={handleDescribe} disabled={!prompt.trim() || loading} className="w-full">
-              {loading ? "Analyzing..." : <><ArrowRight className="h-4 w-4" /> Suggest workflow</>}
-            </Button>
-          </GlassCard>
-
-          {/* Suggested result */}
-          {suggested && (
-            <div className="mt-6 rounded-[var(--radius-xl)] border border-[var(--brand-border)] bg-[var(--brand-light)]/30 p-6 space-y-4 animate-fade-up">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--brand)] mb-1">Suggested workflow</p>
-                  <h3 className="text-base font-bold text-[var(--foreground)]">{suggested.name}</h3>
-                </div>
-                <Button onClick={handleSave} variant="brand_outline" size="sm" disabled={saved}>
-                  {saved ? <><Check className="h-4 w-4" /> Saved!</> : "Save workflow"}
-                </Button>
-              </div>
-              <WorkflowCanvas steps={suggested.steps} />
-            </div>
-          )}
-        </TabsContent>
 
         {/* ── Build manually tab ─────────────────────────── */}
         <TabsContent value="build">
-          <div className="rounded-[var(--radius-xl)] border border-[var(--border)] bg-[var(--surface)] p-6 space-y-4">
+          <form onSubmit={handleCreate} className="rounded-xl border border-surface-border bg-surface p-6 space-y-4">
             <div>
-              <label className="text-xs font-medium text-[var(--foreground)] mb-1 block">Workflow name</label>
-              <Input placeholder="e.g. Lead Qualification" />
+              <label htmlFor="wf-name" className="text-xs font-medium text-text-primary mb-1 block">Workflow name</label>
+              <Input 
+                id="wf-name"
+                placeholder="e.g. Lead Qualification" 
+                value={name}
+                onChange={e => setName(e.target.value)}
+                required
+              />
             </div>
             <div>
-              <label className="text-xs font-medium text-[var(--foreground)] mb-1 block">Description</label>
-              <Textarea placeholder="Describe what this workflow does..." className="min-h-[80px]" />
+              <label htmlFor="wf-desc" className="text-xs font-medium text-text-primary mb-1 block">Description</label>
+              <Textarea 
+                id="wf-desc"
+                placeholder="Describe what this workflow does..." 
+                className="min-h-[80px]" 
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+              />
             </div>
-            <p className="text-xs text-[var(--muted)] bg-[var(--surface-elevated)] border border-[var(--border)] rounded-[var(--radius-md)] px-4 py-3">
-              Visual step builder coming in the next update. Use the "Describe it" tab for now to auto-generate a workflow.
-            </p>
-            <Button className="w-full" disabled>Create workflow</Button>
-          </div>
+            <Button type="submit" className="w-full bg-brand hover:bg-brand-hover text-white" disabled={loading || !name.trim()}>
+              {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Create workflow
+            </Button>
+          </form>
+        </TabsContent>
+
+        {/* ── Describe it tab (AI) ─────────────────── */}
+        <TabsContent value="describe">
+          <GlassCard className="p-6 space-y-6">
+            <div className="flex gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-500 shadow-sm">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-text-primary">AI Workflow Generator</h2>
+                <p className="text-xs text-text-muted mt-1">
+                  Describe what you want to automate in plain English, and Flowra will build the graph for you.
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleAiGenerate} className="space-y-4">
+              <Textarea 
+                placeholder="e.g. Create a workflow that receives a webhook, transforms the customer name to uppercase, checks whether the order value is greater than 100, and sends an HTTP request." 
+                className="min-h-[120px]" 
+                value={aiPrompt}
+                onChange={e => setAiPrompt(e.target.value)}
+                required
+              />
+              <Button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-white" disabled={aiGenerating || !aiPrompt.trim()}>
+                {aiGenerating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                {aiGenerating ? "Generating..." : "Generate Preview"}
+              </Button>
+            </form>
+
+            {aiResult && (
+              <div className="mt-8 pt-6 border-t border-surface-border space-y-4 animate-fade-up">
+                <div>
+                  <h3 className="text-sm font-semibold text-text-primary">Preview</h3>
+                  <p className="text-xs text-text-muted mt-1">Review the generated nodes below. You can configure them fully in the builder.</p>
+                </div>
+
+                <div className="space-y-2">
+                  {aiResult.nodes.map((node: any, idx: number) => {
+                    const Icon = nodeIcons[node.type] || Play;
+                    return (
+                      <div key={node.id} className="flex items-center gap-3 p-3 rounded-lg border border-surface-border bg-surface shadow-sm">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-surface-border bg-surface-elevated text-text-muted">
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-sm font-medium text-text-primary">{node.data?.title || node.type}</h4>
+                          <span className="text-[10px] font-medium text-text-muted uppercase tracking-wider">{node.type}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="bg-warning/10 text-warning p-3 rounded-lg border border-warning/20 text-xs flex gap-2 items-start mt-4">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <p>The workflow will be created in DRAFT mode. You must review, configure, and activate it before it will run.</p>
+                </div>
+
+                <Button onClick={handleInsertGenerated} disabled={loading} className="w-full bg-brand hover:bg-brand-hover text-white mt-4">
+                  {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ArrowRight className="h-4 w-4 mr-2" />}
+                  Insert into Builder
+                </Button>
+              </div>
+            )}
+          </GlassCard>
         </TabsContent>
       </Tabs>
     </div>

@@ -1,6 +1,5 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -23,9 +22,11 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  memberships   OrganizationMember[]
+  accounts         Account[]
+  sessions         Session[]
+  memberships      OrganizationMember[]
+  aiChats          AiChat[]
+  createdWorkflows Workflow[]
 }
 
 model Account {
@@ -74,7 +75,12 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members   OrganizationMember[]
+  members    OrganizationMember[]
+  contacts   Contact[]
+  leads      Lead[]
+  activities Activity[]
+  workflows  Workflow[]
+  executions WorkflowExecution[]
 }
 
 model OrganizationMember {
@@ -97,6 +103,12 @@ enum Role {
   OWNER
   ADMIN
   MEMBER
+}
+
+enum WorkflowStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
 }
 
 // -----------------------------------------------------------------------------
@@ -157,4 +169,142 @@ model Activity {
 
   @@index([organizationId])
   @@index([contactId])
+}
+
+// -----------------------------------------------------------------------------
+// Automations (Workflow Builder)
+// -----------------------------------------------------------------------------
+
+model Workflow {
+  id             String         @id @default(cuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdById    String
+  createdBy      User           @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  name           String
+  description    String?
+  status         WorkflowStatus @default(DRAFT)
+  version        Int            @default(1)
+
+  nodes          WorkflowNode[]
+  edges          WorkflowEdge[]
+  executions     WorkflowExecution[]
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([organizationId])
+  @@index([createdById])
+}
+
+model WorkflowNode {
+  id         String   @id @default(cuid())
+  workflowId String
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  // React Flow stable identity — the node `id` from the React Flow graph
+  nodeId     String
+
+  type       String   // e.g., "trigger", "action", "condition"
+  positionX  Float
+  positionY  Float
+  data       Json     // node-specific config
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([workflowId, nodeId])
+  @@index([workflowId])
+}
+
+model WorkflowEdge {
+  id           String   @id @default(cuid())
+  workflowId   String
+  workflow     Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  // React Flow stable identity — the edge `id` from the React Flow graph
+  edgeId       String
+
+  source       String
+  target       String
+  sourceHandle String?
+  targetHandle String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([workflowId, edgeId])
+  @@index([workflowId])
+}
+
+// -----------------------------------------------------------------------------
+// AI Assistant (Copilot)
+// -----------------------------------------------------------------------------
+
+model AiChat {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title          String?
+  messages       AiMessage[]
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([userId])
+}
+
+model AiMessage {
+  id             String       @id @default(cuid())
+  chatId         String
+  chat           AiChat       @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  
+  role           String       // "user", "assistant", "system"
+  content        String       @db.Text
+  
+  createdAt      DateTime     @default(now())
+
+  @@index([chatId])
+}
+
+// -----------------------------------------------------------------------------
+// Execution Engine (Phase 2.2)
+// -----------------------------------------------------------------------------
+
+enum WorkflowExecutionStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+model WorkflowExecution {
+  id              String                  @id @default(cuid())
+  workflowId      String
+  workflow        Workflow                @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  organizationId  String
+  organization    Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  workflowVersion Int
+  status          WorkflowExecutionStatus @default(PENDING)
+  
+  // Immutable snapshot of the nodes and edges at execution time
+  definition      Json
+  
+  input           Json?
+  nodeResults     Json?
+  error           String?                 @db.Text
+  
+  startedAt       DateTime?
+  completedAt     DateTime?
+  
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  @@index([workflowId])
+  @@index([organizationId])
 }

@@ -1,54 +1,96 @@
-import { getMockAutomations } from "@/lib/mock/automations";
+import { getSession } from "@/lib/auth/session";
+import { redirect } from "next/navigation";
+import { listUserOrganizations } from "@/repositories/organization.repository";
+import { workflowService } from "@/services/workflow.service";
 import { AutomationCard } from "@/components/automations/automation-card";
-import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/ui/stat-card";
-import { Webhook, Plus, Zap } from "lucide-react";
+import { Webhook, Plus, Zap, LayoutTemplate } from "lucide-react";
 import Link from "next/link";
-import { Automation } from "@/types/automations";
+import type { WorkflowListItem } from "@/types/automations";
 
 export const metadata = { title: "Automations — Flowra" };
+export const dynamic = "force-dynamic";
 
 export default async function AutomationsPage() {
-  const automations = await getMockAutomations();
-  const active = automations.filter(a => a.status === "active").length;
-  const totalRuns = automations.reduce((acc, a) => acc + a.runCount, 0);
+  const session = await getSession();
+  if (!session?.user?.id) redirect("/login");
+
+  // Resolve the user's primary organization
+  const orgs = await listUserOrganizations(session.user.id);
+  if (orgs.length === 0) redirect("/dashboard");
+
+  const orgId = orgs[0].id;
+  const workflows = (await workflowService.list(orgId)) as WorkflowListItem[];
+
+  const active = workflows.filter((w) => w.status === "ACTIVE").length;
+  const draft = workflows.filter((w) => w.status === "DRAFT").length;
+  const paused = workflows.filter((w) => w.status === "PAUSED").length;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 animate-fade-up">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2 mb-0.5">
-            <Webhook className="h-5 w-5 text-[var(--brand)]" />
-            <h1 className="text-2xl font-bold text-[var(--foreground)]">Automations</h1>
+    <div className="max-w-7xl mx-auto space-y-10 animate-fade-up pb-20">
+      {/* ── HEADER ───────────────────────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border-strong)]">
+            <Webhook className="h-6 w-6 text-[var(--foreground)]" />
           </div>
-          <p className="text-sm text-[var(--muted)]">Workflows that run your business</p>
+          <div>
+            <h1 className="text-3xl font-bold text-[var(--foreground)] tracking-tight">
+              Automations
+            </h1>
+            <p className="text-[var(--muted)] mt-1.5 text-lg">
+              Manage your workflows and custom automations.
+            </p>
+          </div>
         </div>
-        <Button asChild>
-          <Link href="/dashboard/automations/new"><Plus className="h-4 w-4" /> New workflow</Link>
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" asChild className="h-11">
+            <Link href="/dashboard/templates">
+              <LayoutTemplate className="h-4 w-4 mr-2" />
+              Browse Products
+            </Link>
+          </Button>
+          <Button asChild className="h-11 bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)] shadow-[0_0_16px_-4px_rgba(99,91,255,0.4)]">
+            <Link href={`/dashboard/automations/new?orgId=${orgId}`}>
+              <Plus className="h-4 w-4 mr-2" />
+              Custom Workflow
+            </Link>
+          </Button>
+        </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Active"      value={active}     icon={Zap} />
-        <StatCard title="Total Runs"  value={totalRuns}  trend={{ value: 24 }} icon={Webhook} />
-        <StatCard title="Total"       value={automations.length} icon={Webhook} />
+      {/* ── STATS ────────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <StatCard title="Active"  value={active}           icon={Zap} />
+        <StatCard title="Draft"   value={draft}            icon={Webhook} />
+        <StatCard title="Paused"  value={paused}           icon={Webhook} />
+        <StatCard title="Total"   value={workflows.length} icon={Webhook} />
       </div>
 
-      {/* List */}
-      {automations.length === 0 ? (
-        <EmptyState
-          icon={Webhook}
-          title="No workflows yet"
-          description="Create your first workflow and let Flowra handle the repetitive work."
-          action={{ label: "Create workflow", href: "/dashboard/automations/new" }}
-        />
+      {/* ── LIST ─────────────────────────────────────────────────────────── */}
+      {workflows.length === 0 ? (
+        <div className="py-20 text-center border border-dashed border-[var(--border-strong)] rounded-2xl bg-[var(--surface-elevated)]">
+          <div className="h-12 w-12 rounded-full bg-[var(--surface)] mx-auto flex items-center justify-center mb-4 border border-[var(--border)]">
+            <Webhook className="h-6 w-6 text-[var(--muted)]" />
+          </div>
+          <h3 className="text-lg font-semibold text-[var(--foreground)]">No automations yet</h3>
+          <p className="text-sm text-[var(--muted)] mt-2 mb-6 max-w-md mx-auto">
+            You don't have any custom automations yet. Create one from scratch or browse our catalog of ready-made products.
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/templates">Browse Products</Link>
+            </Button>
+            <Button asChild className="bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]">
+              <Link href={`/dashboard/automations/new?orgId=${orgId}`}>Create Custom Workflow</Link>
+            </Button>
+          </div>
+        </div>
       ) : (
         <div className="space-y-3">
-          {automations.map((auto: Automation) => (
-            <AutomationCard key={auto.id} automation={auto} />
+          {workflows.map((wf: WorkflowListItem) => (
+            <AutomationCard key={wf.id} workflow={wf} />
           ))}
         </div>
       )}

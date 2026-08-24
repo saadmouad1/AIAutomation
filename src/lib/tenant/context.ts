@@ -1,62 +1,49 @@
-import { NextRequest } from "next/server";
-import { getSession } from "../auth";
-import { AppError } from "../errors/app-error";
+import { requireUser } from "../auth";
 import { db } from "../db/client";
-import { Role } from "../../modules/permissions/roles";
+import { AppError } from "../errors/app-error";
+import { Role, Permission, hasPermission } from "./permissions";
 
-export interface TenantContext {
-  user: { id: string; email: string; name?: string | null };
-  organization: { id: string; name: string; slug: string };
-  membership: { id: string; role: Role };
-}
-
-export async function getTenantContext(
-  req: NextRequest,
-  orgIdOrSlug: string
-): Promise<TenantContext> {
-  const session = await getSession();
-
-  if (!session) {
-    throw AppError.unauthorized();
-  }
-
-  // Look up organization and membership in one query
-  const orgWithMembership = await db.organization.findFirst({
+export async function getOrganizationMembership(userId: string, organizationId: string) {
+  return db.organizationMember.findUnique({
     where: {
-      OR: [{ id: orgIdOrSlug }, { slug: orgIdOrSlug }],
-      members: {
-        some: {
-          userId: session.user.id,
-        },
-      },
+      organizationId_userId: {
+        organizationId,
+        userId
+      }
     },
     include: {
-      members: {
-        where: {
-          userId: session.user.id,
-        },
-      },
-    },
+      organization: true
+    }
   });
+}
 
-  if (!orgWithMembership || orgWithMembership.members.length === 0) {
-    // If they aren't a member, treat it as FORBIDDEN (tenant isolation)
-    // We return FORBIDDEN rather than NOT_FOUND to avoid enumerating orgs
-    throw AppError.forbidden("You do not have access to this organization.");
+export async function getTenantContext(organizationId: string) {
+  const user = await requireUser();
+  const membership = await getOrganizationMembership(user.id, organizationId);
+
+  if (!membership) {
+    // Return 404 behavior as requested to not leak resource existence
+    throw AppError.notFound("Organization not found");
   }
 
-  const membership = orgWithMembership.members[0];
-
   return {
-    user: session.user,
-    organization: {
-      id: orgWithMembership.id,
-      name: orgWithMembership.name,
-      slug: orgWithMembership.slug,
-    },
-    membership: {
-      id: membership.id,
-      role: membership.role as Role,
-    },
+    user,
+    organization: membership.organization,
+    role: membership.role as Role,
   };
+}
+
+export async function requireTenant(organizationId: string) {
+  const context = await getTenantContext(organizationId);
+  return context;
+}
+
+export async function requireRole(organizationId: string, requiredPermission: Permission) {
+  const context = await requireTenant(organizationId);
+  
+  if (!hasPermission(context.role, requiredPermission)) {
+    throw AppError.forbidden("You do not have permission to perform this action");
+  }
+
+  return context;
 }
