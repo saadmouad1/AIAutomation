@@ -7,8 +7,9 @@ import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CosmicDustBackground } from "@/components/animations/hero-3d";
-import { Globe } from "lucide-react";
+import { Globe, Menu, X } from "lucide-react";
 import { useTheme } from "next-themes";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,7 @@ import {
 
 function MarketingHeader() {
   const [scrolled, setScrolled] = React.useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const { resolvedTheme, setTheme } = useTheme();
   
   // To avoid hydration mismatch on theme icons
@@ -52,7 +54,7 @@ function MarketingHeader() {
 
         <div className="flex items-center gap-3">
           {mounted && (
-            <div className="flex items-center gap-1 border-r border-[var(--border)] pr-3 mr-1">
+            <div className="hidden sm:flex items-center gap-1 border-r border-[var(--border)] pr-3 mr-1">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
@@ -77,11 +79,66 @@ function MarketingHeader() {
           <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex rounded-full">
             <Link href="/login">Sign in</Link>
           </Button>
-          <Button size="sm" asChild className="rounded-full shadow-[0_0_12px_rgba(99,91,255,0.25)]">
+          <Button size="sm" asChild className="hidden sm:inline-flex rounded-full shadow-[0_0_12px_rgba(99,91,255,0.25)]">
             <Link href="/register">Start free trial</Link>
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="md:hidden text-[var(--foreground)]"
+            onClick={() => setMobileMenuOpen(true)}
+          >
+            <Menu className="h-6 w-6" />
           </Button>
         </div>
       </div>
+
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm md:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+              className="fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-[var(--surface-elevated)] border-l border-[var(--border-strong)] shadow-2xl p-6 flex flex-col md:hidden"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <Logo />
+                <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)} className="rounded-full">
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+              
+              <nav className="flex flex-col gap-6 text-lg font-medium">
+                <Link href="/features" onClick={() => setMobileMenuOpen(false)} className="text-[var(--foreground)] hover:text-[var(--brand)] transition-colors">Features</Link>
+                <Link href="/automations" onClick={() => setMobileMenuOpen(false)} className="text-[var(--foreground)] hover:text-[var(--brand)] transition-colors">Automations</Link>
+                <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} className="text-[var(--foreground)] hover:text-[var(--brand)] transition-colors">Pricing</Link>
+                <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="text-[var(--foreground)] hover:text-[var(--brand)] transition-colors">About Us</Link>
+                <Link href="/contact" onClick={() => setMobileMenuOpen(false)} className="text-[var(--foreground)] hover:text-[var(--brand)] transition-colors">Contact</Link>
+              </nav>
+
+              <div className="mt-auto flex flex-col gap-4 pt-8 border-t border-[var(--border)]">
+                <Button variant="outline" asChild className="w-full justify-center">
+                  <Link href="/login" onClick={() => setMobileMenuOpen(false)}>Sign in</Link>
+                </Button>
+                <Button asChild className="w-full justify-center shadow-[0_0_12px_rgba(99,91,255,0.25)]">
+                  <Link href="/register" onClick={() => setMobileMenuOpen(false)}>Start free trial</Link>
+                </Button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </header>
   );
 }
