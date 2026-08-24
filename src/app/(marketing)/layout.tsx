@@ -44,6 +44,7 @@ function MarketingHeader() {
         
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
           <Link href="/features" className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">Features</Link>
+          <Link href="/automations" className="text-[var(--foreground)] font-semibold hover:text-[var(--brand)] transition-colors">Automations</Link>
           <Link href="/pricing" className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">Pricing</Link>
           <Link href="/about" className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">About Us</Link>
           <Link href="/contact" className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">Contact</Link>
@@ -105,6 +106,7 @@ function MarketingFooter() {
             <h4 className="font-semibold text-[var(--foreground)] mb-4">Product</h4>
             <ul className="space-y-3 text-sm text-[var(--muted)]">
               <li><Link href="/features" className="hover:text-[var(--brand)] transition-colors">Features</Link></li>
+              <li><Link href="/automations" className="hover:text-[var(--brand)] transition-colors">Automation Products</Link></li>
               <li><Link href="/pricing" className="hover:text-[var(--brand)] transition-colors">Pricing</Link></li>
               <li><Link href="/changelog" className="hover:text-[var(--brand)] transition-colors">Changelog</Link></li>
             </ul>
