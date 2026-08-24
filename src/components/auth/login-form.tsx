@@ -7,7 +7,8 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
-import { Sparkles, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
+import { Logo } from "@/components/brand/logo";
 import Link from "next/link";
 
 export function LoginForm() {
@@ -44,9 +45,7 @@ export function LoginForm() {
     <Card className="w-full max-w-md border-surface-border bg-surface/50 backdrop-blur-xl">
       <CardHeader className="space-y-3 text-center">
         <div className="flex justify-center mb-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand/10">
-            <Sparkles className="h-6 w-6 text-brand" />
-          </div>
+          <Logo withText={false} />
         </div>
         <CardTitle className="text-2xl font-semibold tracking-tight text-text-primary">
           Welcome back
