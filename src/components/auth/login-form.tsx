@@ -68,9 +68,10 @@ export function LoginForm() {
             <Input
               id="email"
               name="email"
-              type="email"
-              placeholder="m@example.com"
+              type="text"
+              placeholder="your@email.com or flowra.ai"
               required
+              autoComplete="username"
               disabled={isLoading}
             />
           </div>

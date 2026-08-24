@@ -44,7 +44,7 @@ function MarketingHeader() {
         
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
           <Link href="/features" className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">Features</Link>
-          <Link href="/automations" className="text-[var(--foreground)] font-semibold hover:text-[var(--brand)] transition-colors">Automations</Link>
+          <Link href="/automations" className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">Automations</Link>
           <Link href="/pricing" className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">Pricing</Link>
           <Link href="/about" className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">About Us</Link>
           <Link href="/contact" className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">Contact</Link>
